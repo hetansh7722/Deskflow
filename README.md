@@ -1,15 +1,15 @@
-# 🤖 DeskFlow — AI-Powered IT Helpdesk Assistant
+<h1 align="center">DeskFlow AI-Powered IT Helpdesk Assistant</h1>
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-LLaMA%203.1-F55036?style=flat-square&logo=groq&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-An **agentic AI IT-helpdesk assistant**. An employee types a request in natural language; DeskFlow uses an LLM tool-calling loop to decide which internal IT systems to query, performs the actions (entitlement checks, ticket creation, password resets), and replies with something actionable — no hardcoded intent classifiers.
+DeskFlow is an agentic AI-powered IT helpdesk assistant. It uses an LLM tool-calling workflow to query internal IT systems, perform actions such as entitlement checks and ticket creation, and return actionable responses without hardcoded intent classification.
 
 ---
 
-## ✨ Features
+## Features
 
 - **Agentic tool-calling loop** — the LLM decides which tools to call and when, natively handling multi-step conditional requests (e.g. *"request Adobe if I'm not entitled"*).
 - **10 IT tools** — user profile, software-entitlement check, ticket create / status / list / lifecycle update, password reset, device inventory, device compliance, and VPN diagnostics.
@@ -30,11 +30,11 @@ An **agentic AI IT-helpdesk assistant**. An employee types a request in natural 
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Browser (chat UI)  →  FastAPI  →  Agentic Loop (llm.py)  →  Tool Dispatcher (tools.py)  →  Mock IT Systems (mock_data.py)
-                                      │
+                                      
                                  Groq API (LLaMA 3.1)
 ```
 
@@ -42,7 +42,7 @@ Browser (chat UI)  →  FastAPI  →  Agentic Loop (llm.py)  →  Tool Dispatche
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -54,7 +54,7 @@ Browser (chat UI)  →  FastAPI  →  Agentic Loop (llm.py)  →  Tool Dispatche
 
 ---
 
-## 🔧 Tools Available
+## Tools Available
 
 | Tool | Description |
 |---|---|
@@ -71,7 +71,7 @@ Browser (chat UI)  →  FastAPI  →  Agentic Loop (llm.py)  →  Tool Dispatche
 
 ---
 
-## 🌐 API Endpoints
+## API Endpoints
 
 | Method | Route | Purpose |
 |---|---|---|
@@ -92,7 +92,7 @@ Everything except `/`, `/login`, `/logout`, `/me`, `/health` and static assets r
 
 ---
 
-## 🔐 Demo credentials
+## Demo credentials
 
 Every active employee shares one demo password (override with `DESKFLOW_DEMO_PASSWORD` in `.env`):
 
@@ -102,11 +102,11 @@ Employee ID : EMP001   Password: Deskflow@123
 
 > The login screen shows no hints — this is documented here on purpose.
 
-**Admin dashboard accounts** (see the 📊 Admin link + `/static/admin.html`): `EMP009` (System Administrator), `EMP014` (IT Operations Manager), `EMP020` (CTO) — same demo password. Regular employees get **403** on admin endpoints.
+**Admin dashboard accounts** (see the  Admin link + `/static/admin.html`): `EMP009` (System Administrator), `EMP014` (IT Operations Manager), `EMP020` (CTO) — same demo password. Regular employees get **403** on admin endpoints.
 
 ---
 
-## 🚀 Setup
+## Setup
 
 **Prerequisites:** Python 3.11+ and a free Groq API key from [console.groq.com](https://console.groq.com).
 
@@ -134,13 +134,13 @@ echo GROQ_API_KEY=your_key_here > .env
 python main.py
 ```
 
-Open **http://localhost:8000** in your browser and sign in with the [demo credentials](#-demo-credentials).
+Open **http://localhost:8000** in your browser and sign in with the [demo credentials](#demo-credentials).
 
 > **Dependencies:** `fastapi`, `uvicorn[standard]`, `httpx`, `python-dotenv`, `pydantic` (tests: `pytest`, see `requirements-dev.txt`).
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 pip install -r requirements-dev.txt
@@ -151,7 +151,7 @@ pytest -q
 
 ---
 
-## 🖥️ PowerShell admin scripts
+## PowerShell admin scripts
 
 All scripts live in `scripts/` and talk to the authenticated REST API (`/login` → `/tools/*`).
 
@@ -170,34 +170,34 @@ $cred = Get-Credential    # EMP001 / Deskflow@123
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 DeskFlow/
-├── main.py            # FastAPI app — routes, auth gate, session management
-├── auth.py            # PBKDF2 password hashing + HMAC session tokens
-├── llm.py             # Agentic loop — Groq API call + tool execution
-├── tools.py           # 10 tool implementations + JSON schemas + dispatcher
-├── classifier.py      # Independent priority gate for ticket creation
-├── monitors.py        # Background SLA breach checker + stale ticket sweep
-├── alerts.py          # Pluggable notifier — Discord / SMTP / log channels
-├── db.py              # SQLite persistence — audit trail + ticket store
-├── mock_data.py       # In-memory users, software catalog, seed tickets
-├── logger.py          # In-memory ring-buffer logger (exposed at /trace)
-├── static/
-│   ├── index.html     # Single-file chat UI (with login screen)
-│   └── admin.html     # Operations dashboard
-├── scripts/           # PowerShell admin/automation scripts
-├── tests/             # pytest suite
-├── setup.ps1          # One-command setup (venv + deps + tests)
-├── requirements.txt
-├── requirements-dev.txt
-└── .env               # GROQ_API_KEY + optional alert/auth config (not committed)
+ main.py            # FastAPI app — routes, auth gate, session management
+ auth.py            # PBKDF2 password hashing + HMAC session tokens
+ llm.py             # Agentic loop — Groq API call + tool execution
+ tools.py           # 10 tool implementations + JSON schemas + dispatcher
+ classifier.py      # Independent priority gate for ticket creation
+ monitors.py        # Background SLA breach checker + stale ticket sweep
+ alerts.py          # Pluggable notifier — Discord / SMTP / log channels
+ db.py              # SQLite persistence — audit trail + ticket store
+ mock_data.py       # In-memory users, software catalog, seed tickets
+ logger.py          # In-memory ring-buffer logger (exposed at /trace)
+ static/
+    index.html     # Single-file chat UI (with login screen)
+    admin.html     # Operations dashboard
+ scripts/           # PowerShell admin/automation scripts
+ tests/             # pytest suite
+ setup.ps1          # One-command setup (venv + deps + tests)
+ requirements.txt
+ requirements-dev.txt
+ .env               # GROQ_API_KEY + optional alert/auth config (not committed)
 ```
 
 ---
 
-## 💡 Design Notes
+## Design Notes
 
 - **Why a tool-calling loop, not intent classification?** Conditional multi-step queries (*"check entitlement, then raise a ticket if I'm not entitled"*) require a decision based on live data — an agentic loop does this natively; a classifier can't.
 - **Why Groq + LLaMA 3.1?** Free tier, function-calling support, and sub-second latency. The design is model-agnostic — swapping to another provider is a small change in `llm.py`.
@@ -207,6 +207,6 @@ DeskFlow/
 
 ---
 
-## 📄 License
+## License
 
 MIT
