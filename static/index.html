@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeskFlow — IT Helpdesk AI</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    background: #1a1d27;
+    border-bottom: 1px solid #2d3147;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-title { flex: 1; }
+  .header-title h1 { font-size: 17px; font-weight: 700; color: #f1f5f9; }
+  .header-title p  { font-size: 12px; color: #64748b; }
+
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: #262b3d;
+    border: 1px solid #2d3147;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .user-chip .uname { color: #e2e8f0; white-space: nowrap; }
+  .user-chip .udept { color: #64748b; font-size: 11px; }
+  .user-chip .logout {
+    background: transparent; border: 1px solid #2d3147; color: #94a3b8;
+    border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer;
+  }
+  .user-chip .logout:hover { border-color: #f87171; color: #f87171; }
+
+  .btn-trace {
+    padding: 6px 14px;
+    background: #262b3d;
+    border: 1px solid #2d3147;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-trace:hover { background: #2d3147; color: #e2e8f0; }
+  .btn-trace.active { border-color: #6366f1; color: #a5b4fc; }
+
+  /* ── Login overlay ─────────────────────────────────────────────────────── */
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(11, 13, 21, 0.92);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-card {
+    background: #151827; border: 1px solid #23273c; border-radius: 14px;
+    padding: 30px 26px; width: 340px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  }
+  .login-card h2 { color: #f1f5f9; font-size: 18px; margin-bottom: 4px; }
+  .login-card .sub { color: #64748b; font-size: 12px; margin-bottom: 18px; }
+  .login-card input {
+    width: 100%; padding: 10px 12px; margin-bottom: 10px;
+    background: #0b0d15; border: 1px solid #2a2f45; border-radius: 8px;
+    color: #e2e8f0; font-size: 13px;
+  }
+  .login-card input:focus { outline: none; border-color: #6366f1; }
+  .login-card button {
+    width: 100%; padding: 10px; margin-top: 4px;
+    background: #6366f1; color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .login-card button:hover { background: #4f46e5; }
+  .login-error { color: #f87171; font-size: 12px; min-height: 16px; margin-bottom: 6px; }
+  .login-hint { color: #475569; font-size: 11px; margin-top: 14px; text-align: center; }
+
+  /* ── Body layout ──────────────────────────────────────────────────────── */
+  .body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Chat pane ────────────────────────────────────────────────────────── */
+  .chat-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* Welcome banner */
+  .welcome {
+    margin: auto;
+    text-align: center;
+    max-width: 480px;
+    padding: 40px 20px;
+  }
+  .welcome .big-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  .welcome h2 { font-size: 22px; color: #f1f5f9; margin-bottom: 8px; }
+  .welcome p  { font-size: 14px; color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chip {
+    padding: 8px 14px;
+    background: #1e2235;
+    border: 1px solid #2d3147;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover { background: #262b3d; color: #e2e8f0; border-color: #6366f1; }
+
+  /* Messages */
+  .msg-row {
+    display: flex;
+    gap: 12px;
+    max-width: 760px;
+    width: 100%;
+  }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-row.assistant { align-self: flex-start; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 2px;
+  }
+  .avatar.ai  { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .avatar.usr { background: #334155; }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 90%;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble.ai  {
+    background: #1e2235;
+    border: 1px solid #2d3147;
+    border-top-left-radius: 4px;
+  }
+  .bubble.usr {
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: #fff;
+    border-top-right-radius: 4px;
+    min-width: 120px;
+    text-align: center;
+    word-break: normal;
+    overflow-wrap: normal;
+    
+  }
+
+  .msg-meta {
+    font-size: 11px;
+    color: #475569;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+
+  /* Typing indicator */
+  .typing-bubble {
+    display: flex; align-items: center; gap: 5px;
+    padding: 12px 16px;
+    background: #1e2235;
+    border: 1px solid #2d3147;
+    border-radius: 14px; border-top-left-radius: 4px;
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #6366f1;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%            { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Input area ───────────────────────────────────────────────────────── */
+  .input-area {
+    padding: 16px 24px;
+    background: #1a1d27;
+    border-top: 1px solid #2d3147;
+    flex-shrink: 0;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: #262b3d;
+    border: 1px solid #2d3147;
+    border-radius: 14px;
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+  }
+  .input-row:focus-within { border-color: #6366f1; }
+
+  #msg-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    min-height: 22px;
+    line-height: 1.5;
+    font-family: inherit;
+  }
+  #msg-input::placeholder { color: #475569; }
+
+  #send-btn {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  #send-btn:hover  { opacity: 0.85; }
+  #send-btn:active { transform: scale(0.93); }
+  #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .hint { font-size: 11px; color: #334155; text-align: center; margin-top: 8px; }
+
+  /* ── Trace panel ──────────────────────────────────────────────────────── */
+  .trace-pane {
+    width: 380px;
+    background: #13151f;
+    border-left: 1px solid #2d3147;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: none;
+  }
+  .trace-pane.open { display: flex; }
+
+  .trace-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #2d3147;
+    flex-shrink: 0;
+  }
+  .trace-header span { font-size: 13px; font-weight: 600; color: #94a3b8; }
+
+  #trace-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .trace-step {
+    margin-bottom: 14px;
+    background: #1a1d27;
+    border: 1px solid #2d3147;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .trace-step-header {
+    padding: 6px 10px;
+    background: #1e2235;
+    font-weight: 600;
+    color: #818cf8;
+    font-size: 10px;
+    border-bottom: 1px solid #2d3147;
+  }
+  .trace-tool {
+    padding: 6px 10px;
+    border-bottom: 1px solid #1e2235;
+  }
+  .trace-tool:last-child { border-bottom: none; }
+  .tool-name { color: #34d399; }
+  .tool-args { color: #fbbf24; font-size: 10px; }
+  .tool-result { color: #94a3b8; font-size: 10px; margin-top: 2px; }
+  .no-tools { padding: 8px 10px; color: #475569; font-size: 10px; }
+
+  /* ── Scrollbar ────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2d3147; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ── Login overlay ───────────────────────────────────────────────────────── -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <h2>Sign in to DeskFlow</h2>
+    <p class="sub">Use your employee ID to continue to the IT helpdesk.</p>
+    <form onsubmit="return doLogin(event)">
+      <input id="login-emp" placeholder="Employee ID (e.g. EMP001)" autocomplete="username" required />
+      <input id="login-pw" type="password" placeholder="Password" autocomplete="current-password" required />
+      <p class="login-error" id="login-error"></p>
+      <button type="submit" id="login-btn">Sign in</button>
+    </form>
+    <p class="login-hint">Demo credentials are listed in the project README.</p>
+  </div>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">🤖</div>
+  <div class="header-title">
+    <h1>DeskFlow</h1>
+    <p>AI-Powered IT Helpdesk · DeskFlow Technologies</p>
+  </div>
+  <div class="user-chip" id="user-chip" style="display:none;">
+    <span class="uname" id="user-name">—</span>
+    <span class="udept" id="user-dept"></span>
+    <button class="logout" onclick="doLogout()">Sign out</button>
+  </div>
+  <button class="btn-trace" id="trace-toggle" onclick="toggleTrace()">🔍 Trace</button>
+  <a href="/static/admin.html" class="btn-trace" id="admin-link" style="display:none;text-decoration:none;">📊 Admin</a>
+</header>
+
+<!-- ── Body ────────────────────────────────────────────────────────────────── -->
+<div class="body">
+
+  <!-- Chat pane -->
+  <div class="chat-pane">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="big-icon">💬</div>
+        <h2>How can I help you today?</h2>
+        <p>I'm DeskFlow, your IT helpdesk assistant. Ask me about software access, password resets, ticket status, VPN issues, and more.</p>
+        <div class="chips">
+          <div class="chip" onclick="useChip(this)">Request Adobe Creative Suite access</div>
+          <div class="chip" onclick="useChip(this)">Reset my password</div>
+          <div class="chip" onclick="useChip(this)">Check status of ticket TKT-1001</div>
+          <div class="chip" onclick="useChip(this)">What tickets do I have open?</div>
+          <div class="chip" onclick="useChip(this)">I can't connect to VPN from home</div>
+          <div class="chip" onclick="useChip(this)">Do I have access to GitHub?</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea id="msg-input" rows="1" placeholder="Ask DeskFlow anything IT-related…"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <p class="hint">Press Enter to send · Shift+Enter for new line</p>
+    </div>
+  </div>
+
+  <!-- Trace pane -->
+  <div class="trace-pane" id="trace-pane">
+    <div class="trace-header">
+      <span>⚙️ Execution Trace</span>
+      <button class="btn-trace" onclick="refreshTrace()" style="padding:4px 10px;">↺ Refresh</button>
+    </div>
+    <div id="trace-log"><p style="color:#475569;padding:12px;font-size:11px;">Send a message to see the trace.</p></div>
+  </div>
+
+</div>
+
+<script>
+  const sessionId = "session_" + Math.random().toString(36).slice(2, 9);
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async function refreshSession() {
+    try {
+      const res = await fetch("/me");
+      const data = await res.json();
+      const overlay = document.getElementById("login-overlay");
+      const chip = document.getElementById("user-chip");
+      if (data.authenticated) {
+        overlay.classList.add("hidden");
+        chip.style.display = "flex";
+        document.getElementById("user-name").textContent = data.name;
+        document.getElementById("user-dept").textContent =
+          `${data.employee_id} · ${data.department}`;
+        document.getElementById("admin-link").style.display = data.is_admin ? "" : "none";
+        return true;
+      }
+    } catch (e) {
+      console.error("Session check failed", e);
+    }
+    document.getElementById("login-overlay").classList.remove("hidden");
+    document.getElementById("user-chip").style.display = "none";
+    return false;
+  }
+
+  async function doLogin(ev) {
+    ev.preventDefault();
+    const btn = document.getElementById("login-btn");
+    const err = document.getElementById("login-error");
+    btn.disabled = true;
+    err.textContent = "";
+    try {
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: document.getElementById("login-emp").value.trim(),
+          password: document.getElementById("login-pw").value,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        err.textContent = data.detail || "Sign-in failed.";
+        return false;
+      }
+      document.getElementById("login-pw").value = "";
+      await refreshSession();
+      document.getElementById("msg-input").focus();
+      return false;
+    } catch (e) {
+      err.textContent = "Network error — is the server running?";
+      return false;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function doLogout() {
+    await fetch("/logout", { method: "POST" });
+    location.reload();
+  }
+
+  refreshSession();
+
+  let traceOpen = false;
+  let lastTrace = [];
+
+  // ── Chip suggestions ──────────────────────────────────────────────────────
+  function useChip(el) {
+    document.getElementById("msg-input").value = el.textContent.trim();
+    sendMessage();
+  }
+
+  // ── Auto-resize textarea ──────────────────────────────────────────────────
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  // ── Append message bubble ─────────────────────────────────────────────────
+  function appendMessage(role, text, timestamp) {
+    const container = document.getElementById("messages");
+    const welcome = document.getElementById("welcome");
+    if (welcome) welcome.remove();
+
+    const row = document.createElement("div");
+    row.className = `msg-row ${role}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = `avatar ${role === "assistant" ? "ai" : "usr"}`;
+    avatar.textContent = role === "assistant" ? "🤖" : "👤";
+
+    const col = document.createElement("div");
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${role === "assistant" ? "ai" : "usr"}`;
+    bubble.textContent = text;
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    meta.textContent = timestamp || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    col.appendChild(bubble);
+    col.appendChild(meta);
+    row.appendChild(avatar);
+    row.appendChild(col);
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    return row;
+  }
+
+  // ── Typing indicator ──────────────────────────────────────────────────────
+  function showTyping() {
+    const container = document.getElementById("messages");
+    const row = document.createElement("div");
+    row.className = "msg-row assistant";
+    row.id = "typing-row";
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar ai";
+    avatar.textContent = "🤖";
+
+    const bubble = document.createElement("div");
+    bubble.className = "typing-bubble";
+    bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById("typing-row");
+    if (el) el.remove();
+  }
+
+  // ── Main send ─────────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const input = document.getElementById("msg-input");
+    const btn   = document.getElementById("send-btn");
+    const text  = input.value.trim();
+    if (!text) return;
+
+    input.value = "";
+    input.style.height = "auto";
+    btn.disabled = true;
+
+    appendMessage("user", text);
+    showTyping();
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          session_id: sessionId,
+        }),
+      });
+
+      removeTyping();
+
+      if (res.status === 401) {
+        appendMessage("assistant", "🔒 Your session expired. Please sign in again.");
+        document.getElementById("login-overlay").classList.remove("hidden");
+      } else if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+        appendMessage("assistant", "⚠️ " + (err.detail || "Something went wrong. Please try again."));
+      } else {
+        const data = await res.json();
+        appendMessage("assistant", data.response);
+        lastTrace = data.trace || [];
+        if (traceOpen) renderTrace(lastTrace);
+      }
+    } catch (e) {
+      removeTyping();
+      appendMessage("assistant", "⚠️ Network error. Is the server running?");
+    }
+
+    btn.disabled = false;
+    input.focus();
+  }
+
+  // ── Trace panel ───────────────────────────────────────────────────────────
+  function toggleTrace() {
+    traceOpen = !traceOpen;
+    const pane = document.getElementById("trace-pane");
+    const btn  = document.getElementById("trace-toggle");
+    pane.classList.toggle("open", traceOpen);
+    btn.classList.toggle("active", traceOpen);
+    if (traceOpen && lastTrace.length) renderTrace(lastTrace);
+  }
+
+  async function refreshTrace() {
+    try {
+      const res  = await fetch("/trace");
+      const data = await res.json();
+      renderRawLogs(data.logs || []);
+    } catch { /* ignore */ }
+  }
+
+  function renderTrace(trace) {
+    const el = document.getElementById("trace-log");
+    if (!trace || !trace.length) {
+      el.innerHTML = '<p style="color:#475569;padding:12px;font-size:11px;">No trace data yet.</p>';
+      return;
+    }
+    el.innerHTML = trace.map(step => {
+      const calls = step.tool_calls || [];
+      const callsHtml = calls.length
+        ? calls.map(c => `
+            <div class="trace-tool">
+              <div class="tool-name">⚙ ${c.tool}</div>
+              <div class="tool-args">${JSON.stringify(c.arguments, null, 2)}</div>
+              <div class="tool-result">→ ${JSON.stringify(c.result).slice(0, 300)}</div>
+            </div>`).join("")
+        : '<div class="no-tools">No tool calls — direct response</div>';
+
+      return `
+        <div class="trace-step">
+          <div class="trace-step-header">
+            Iteration ${step.iteration} &nbsp;·&nbsp; finish: ${step.finish_reason || "tool_calls"}
+          </div>
+          ${callsHtml}
+        </div>`;
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function renderRawLogs(logs) {
+    const el = document.getElementById("trace-log");
+    el.innerHTML = logs.slice(-50).map(l =>
+      `<div style="margin-bottom:4px">
+        <span style="color:#475569">${l.ts.slice(11,19)}</span>
+        <span style="color:${l.level==='WARNING'?'#fbbf24':'#94a3b8'}"> ${l.msg}</span>
+      </div>`
+    ).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+</script>
+</body>
+</html>

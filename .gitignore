@@ -1,0 +1,12 @@
+.env
+.auth_secret
+deskflow.db
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.vscode/
+.idea/
+*.log

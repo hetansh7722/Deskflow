@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeskFlow — Admin Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1117; color: #e2e8f0; min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 24px; background: #1a1d27; border-bottom: 1px solid #2d3147;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .title { flex: 1; }
+  .title h1 { font-size: 17px; font-weight: 700; color: #f1f5f9; }
+  .title p { font-size: 12px; color: #64748b; }
+  .btn {
+    padding: 6px 14px; background: #262b3d; border: 1px solid #2d3147;
+    border-radius: 8px; color: #94a3b8; font-size: 12px; cursor: pointer;
+    text-decoration: none; transition: all .2s;
+  }
+  .btn:hover { background: #2d3147; color: #e2e8f0; }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .card { background: #151827; border: 1px solid #23273c; border-radius: 12px; padding: 16px; }
+  .card .num { font-size: 26px; font-weight: 700; color: #f1f5f9; }
+  .card .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+  .card.alert .num { color: #f87171; }
+  .card.warn .num { color: #fbbf24; }
+  .card.ok .num { color: #34d399; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: #151827; border: 1px solid #23273c; border-radius: 12px; padding: 16px; }
+  .panel h2 { font-size: 13px; color: #cbd5e1; margin-bottom: 14px; font-weight: 600; }
+  .panel.wide { grid-column: 1 / -1; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .bar-row .name { width: 110px; color: #94a3b8; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #0b0d15; border-radius: 6px; height: 16px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 6px; min-width: 2px; transition: width .4s; }
+  .bar-fill.red { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .bar-fill.amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .bar-fill.green { background: linear-gradient(90deg, #10b981, #34d399); }
+  .bar-row .val { width: 34px; text-align: right; color: #e2e8f0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: #64748b; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #23273c; }
+  td { padding: 7px 8px; border-bottom: 1px solid #1b1f30; color: #cbd5e1; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+  .pill.critical { background: rgba(239,68,68,.15); color: #f87171; }
+  .pill.high { background: rgba(245,158,11,.15); color: #fbbf24; }
+  .pill.medium { background: rgba(99,102,241,.15); color: #a5b4fc; }
+  .pill.low { background: rgba(52,211,153,.15); color: #34d399; }
+  .muted { color: #475569; font-size: 11px; padding: 10px 8px; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 11px; }
+
+  .error-banner {
+    background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.4);
+    color: #f87171; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📊</div>
+  <div class="title">
+    <h1>DeskFlow — Operations Dashboard</h1>
+    <p>Tickets · SLA monitors · tool activity</p>
+  </div>
+  <button class="btn" onclick="loadStats()">↺ Refresh</button>
+  <a class="btn" href="/">💬 Chat</a>
+</header>
+
+<main>
+  <div id="error" class="error-banner" style="display:none;"></div>
+
+  <div class="cards">
+    <div class="card"><div class="num" id="c-total">—</div><div class="lbl">Total tickets</div></div>
+    <div class="card"><div class="num" id="c-open">—</div><div class="lbl">Open</div></div>
+    <div class="card alert"><div class="num" id="c-breach">—</div><div class="lbl">SLA breached</div></div>
+    <div class="card warn"><div class="num" id="c-stale">—</div><div class="lbl">Stale (flagged)</div></div>
+    <div class="card ok"><div class="num" id="c-toolcalls">—</div><div class="lbl">Tool calls logged</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Open tickets by priority</h2>
+      <div id="by-priority"><p class="muted">Loading…</p></div>
+    </div>
+    <div class="panel">
+      <h2>Open tickets by category</h2>
+      <div id="by-category"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>🚨 SLA breaches <span style="color:#475569;font-weight:400;">(flag only — status unchanged)</span></h2>
+      <div id="breaches"><p class="muted">Loading…</p></div>
+    </div>
+    <div class="panel">
+      <h2>🕓 Stale tickets <span style="color:#475569;font-weight:400;">(no update in 7+ days)</span></h2>
+      <div id="stale"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Tickets by status</h2>
+      <div id="by-status"><p class="muted">Loading…</p></div>
+    </div>
+    <div class="panel">
+      <h2>Tool calls by tool (persisted)</h2>
+      <div id="tool-calls"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel wide">
+      <h2>🛠️ Ticket actions <span style="color:#475569;font-weight:400;">(change status or resolve — resolution note required to close)</span></h2>
+      <div id="manage"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel wide">
+      <h2>Recent tool activity</h2>
+      <div id="recent-tools"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const PRIORITY_CLASS = { critical: "critical", high: "high", medium: "medium", low: "low" };
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function bars(elId, counts, colorFn) {
+    const el = document.getElementById(elId);
+    const entries = Object.entries(counts || {});
+    if (!entries.length) { el.innerHTML = '<p class="muted">No data.</p>'; return; }
+    const max = Math.max(...entries.map(([, v]) => v), 1);
+    el.innerHTML = entries.sort((a, b) => b[1] - a[1]).map(([k, v]) => `
+      <div class="bar-row">
+        <span class="name">${esc(k)}</span>
+        <div class="bar-track"><div class="bar-fill ${colorFn ? colorFn(k) : ""}" style="width:${(v / max) * 100}%"></div></div>
+        <span class="val">${v}</span>
+      </div>`).join("");
+  }
+
+  function ticketTable(elId, rows, cols) {
+    const el = document.getElementById(elId);
+    if (!rows || !rows.length) { el.innerHTML = '<p class="muted">None. 🎉</p>'; return; }
+    el.innerHTML = `<table><thead><tr>${cols.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${c.mono ? "mono" : ""}">${c.render(r)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+
+  async function loadStats() {
+    const err = document.getElementById("error");
+    err.style.display = "none";
+    try {
+      const me = await (await fetch("/me")).json();
+      if (!me.authenticated) { location.href = "/"; return; }
+
+      const res = await fetch("/stats");
+      if (res.status === 401 || res.status === 403) { location.href = "/"; return; }
+      if (!res.ok) throw new Error("stats " + res.status);
+      const s = await res.json();
+
+      document.getElementById("c-total").textContent = s.totals.tickets;
+      document.getElementById("c-open").textContent = s.totals.open;
+      document.getElementById("c-breach").textContent = s.totals.sla_breached;
+      document.getElementById("c-stale").textContent = s.totals.stale;
+      document.getElementById("c-toolcalls").textContent =
+        Object.values(s.tool_calls || {}).reduce((a, b) => a + b, 0);
+
+      bars("by-priority", s.by_priority, k => k === "critical" || k === "high" ? "red" : k === "medium" ? "amber" : "green");
+      bars("by-category", s.by_category);
+      bars("by-status", s.by_status);
+      bars("tool-calls", s.tool_calls);
+
+      ticketTable("breaches", s.sla_breaches, [
+        { label: "Ticket", render: r => `<span class="mono">${esc(r.ticket_id)}</span>` },
+        { label: "Priority", render: r => `<span class="pill ${PRIORITY_CLASS[r.priority] || ""}">${esc(r.priority)}</span>` },
+        { label: "Title", render: r => esc(r.title) },
+        { label: "Assigned", render: r => esc(r.assigned_to) },
+      ]);
+      ticketTable("stale", s.stale_tickets, [
+        { label: "Ticket", render: r => `<span class="mono">${esc(r.ticket_id)}</span>` },
+        { label: "Status", render: r => esc(r.status) },
+        { label: "Title", render: r => esc(r.title) },
+        { label: "Last update", render: r => `<span class="mono">${esc((r.updated_at || "").slice(0, 16))}</span>` },
+      ]);
+
+      const recent = s.recent_tool_calls || [];
+      const el = document.getElementById("recent-tools");
+      el.innerHTML = recent.length
+        ? `<table><thead><tr><th>Time</th><th>Employee</th><th>Tool</th><th>Arguments</th></tr></thead><tbody>
+            ${recent.map(r => `<tr>
+              <td class="mono">${esc((r.ts || "").slice(11, 19))}</td>
+              <td>${esc(r.employee_id)}</td>
+              <td class="mono">${esc((r.content || "").split("(")[0])}</td>
+              <td class="mono" style="color:#64748b;">${esc((r.content || "").slice((r.content || "").indexOf("(")).slice(0, 80))}</td>
+            </tr>`).join("")}</tbody></table>`
+        : '<p class="muted">No tool calls yet.</p>';
+    } catch (e) {
+      err.textContent = "Failed to load stats: " + e.message;
+      err.style.display = "block";
+    }
+  }
+
+  const STATUSES = ["open", "in_progress", "pending", "resolved", "closed"];
+  const CLOSED = ["resolved", "closed"];
+  let meId = null;
+
+  async function loadTickets() {
+    const el = document.getElementById("manage");
+    try {
+      const res = await fetch("/tickets");
+      if (res.status === 401 || res.status === 403) { location.href = "/"; return; }
+      const data = await res.json();
+      if (!meId) {
+        const me = await (await fetch("/me")).json();
+        meId = me.employee_id;
+      }
+      const active = data.tickets.filter(t => !CLOSED.includes(t.status));
+      if (!active.length) { el.innerHTML = '<p class="muted">No open tickets. 🎉</p>'; return; }
+      el.innerHTML = `<table><thead><tr>
+          <th>Ticket</th><th>Title</th><th>Owner</th><th>Priority</th><th>Status</th><th>Action</th>
+        </tr></thead><tbody>${active.map(t => `
+          <tr>
+            <td class="mono">${esc(t.ticket_id)}</td>
+            <td>${esc(t.title)}</td>
+            <td class="mono">${esc(t.employee_id)}</td>
+            <td><span class="pill ${PRIORITY_CLASS[t.priority] || ""}">${esc(t.priority)}</span></td>
+            <td>${esc(t.status)}</td>
+            <td>
+              <select id="st-${esc(t.ticket_id)}" style="background:#0b0d15;color:#e2e8f0;border:1px solid #2d3147;border-radius:6px;padding:3px 6px;font-size:11px;">
+                ${STATUSES.filter(s => s !== t.status).map(s => `<option value="${s}">${s}</option>`).join("")}
+              </select>
+              <button class="btn" style="padding:3px 10px;" onclick="applyStatus('${esc(t.ticket_id)}')">Apply</button>
+            </td>
+          </tr>`).join("")}</tbody></table>`;
+    } catch (e) {
+      el.innerHTML = `<p class="muted">Failed to load tickets: ${esc(e.message)}</p>`;
+    }
+  }
+
+  async function applyStatus(ticketId) {
+    const status = document.getElementById("st-" + ticketId).value;
+    let resolution = null;
+    if (CLOSED.includes(status)) {
+      resolution = prompt(`Resolution note for ${ticketId} (required to ${status}):`);
+      if (resolution === null) return;
+      if (!resolution.trim()) { alert("A resolution note is required."); return; }
+    }
+    const payload = { arguments: { ticket_id: ticketId, employee_id: meId, status } };
+    if (resolution) payload.arguments.resolution = resolution.trim();
+    try {
+      const res = await fetch("/tools/update_ticket_status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const out = await res.json();
+      if (res.status === 401 || res.status === 403) { location.href = "/"; return; }
+      if (out.result && out.result.error) { alert(out.result.error); return; }
+      alert(out.result ? out.result.message : "Updated.");
+      loadTickets();
+      loadStats();
+    } catch (e) {
+      alert("Update failed: " + e.message);
+    }
+  }
+
+  loadStats();
+  loadTickets();
+  setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
