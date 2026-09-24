@@ -209,4 +209,4 @@ DeskFlow/
 
 ## License
 
-MIT
+[MIT License](LICENSE.md)
