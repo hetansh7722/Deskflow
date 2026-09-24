@@ -35,7 +35,7 @@ DeskFlow is an agentic AI-powered IT helpdesk assistant. It uses an LLM tool-cal
 <h2 align="center">Architecture</h2>
 
 <p align="center">
-  <img src="architecture.png" alt="DeskFlow Architecture" width="900">
+  <img src="Architecture.png" alt="DeskFlow Architecture" width="900">
 </p>
 
 
