@@ -32,7 +32,11 @@ DeskFlow is an agentic AI-powered IT helpdesk assistant. It uses an LLM tool-cal
 
 ## Architecture
 
-![Uploading ChatGPT Image Sep 25, 2026, 02_10_30 AM.png…]()
+<h2 align="center">Architecture</h2>
+
+<p align="center">
+  <img src="architecture.png" alt="DeskFlow Architecture" width="900">
+</p>
 
 
 **Agentic loop:** builds messages (system prompt + history + user turn) → calls Groq with the tool schemas → if the model returns `tool_calls`, executes them, appends results, and loops (up to 10 iterations) → returns the final answer when the model stops.
