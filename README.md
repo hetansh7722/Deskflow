@@ -48,7 +48,7 @@ DeskFlow is an agentic AI-powered IT helpdesk assistant. It uses an LLM tool-cal
 | Layer | Technology |
 |---|---|
 | **Backend** | FastAPI + Uvicorn |
-| **LLM** | Groq API — `openai/gpt-oss-20b` (called via `httpx`, OpenAI-compatible endpoint) |
+| **LLM** | Groq API |
 | **Validation** | Pydantic |
 | **Frontend** | Single-file HTML / CSS / JS chat UI |
 | **State & logs** | In-memory sessions + a `deque` ring-buffer logger |
